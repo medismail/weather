@@ -34,6 +34,8 @@ class WeatherController extends IntermediateController {
   private $trans;
 	private static $apiWeatherURL = "http://api.openweathermap.org/data/2.5/weather?mode=json&q=";
 	private static $apiForecastURL = "http://api.openweathermap.org/data/2.5/forecast?mode=json&q=";
+        private static $apiCheckWXURL = "https://api.checkwx.com/metar/";
+	private static $apiAirPollutionURL = "http://api.openweathermap.org/data/2.5/air_pollution?mode=json&";
 
 	public function __construct ($appName, IConfig $config, IRequest $request, $userId, CityMapper $mapper, SettingsMapper $settingsMapper, IL10N $trans) {
 		parent::__construct($appName, $request);
@@ -64,6 +66,8 @@ class WeatherController extends IntermediateController {
 	private function getCityInformations ($name) {
 
 		$apiKey = $this->config->getAppValue($this->appName, 'openweathermap_api_key');
+		$apiMetarKey = $this->config->getAppValue($this->appName, 'checkwx_api_key');
+
 		$name = preg_replace("[ ]",'%20',$name);
 
 		$openWeatherMapLang = array("ar", "bg", "ca", "cz", "de", "el", "en", "fa", "fi", "fr", "gl", "hr", "hu", "it", "ja", "kr", "la", "lt", "mk", "nl", "pl", "pt", "ro", "ru", "se", "sk", "sl", "es", "tr", "ua", "vi");
@@ -115,6 +119,16 @@ class WeatherController extends IntermediateController {
 					)
 				);
 			}
+		}
+
+		if (isset($cityDatas['coord'])) {
+			if ($apiMetarKey) {
+				$coord = "lat/".$cityDatas['coord']['lat']."/lon/".$cityDatas['coord']['lon'];
+				$metar = json_decode(file_get_contents(WeatherController::$apiCheckWXURL.$coord."/decoded?x-api-key=".$apiMetarKey), true);
+				$cityDatas['METAR'] = $metar['data'][0];
+			}
+			$airPollution = json_decode(file_get_contents(WeatherController::$apiAirPollutionURL."lat=".$cityDatas['coord']['lat']."&lon=".$cityDatas['coord']['lon']."&appid=".$apiKey), true);
+			$cityDatas['AIR'] = $airPollution['list'][0];
 		}
 
 		return $cityDatas;

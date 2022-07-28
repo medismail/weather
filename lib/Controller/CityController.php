@@ -24,6 +24,7 @@ use \OCA\Weather\Db\CityMapper;
 use \OCA\Weather\Db\SettingsMapper;
 use \OCA\Weather\Controller\IntermediateController;
 
+
 class CityController extends IntermediateController {
 
 	private $userId;
@@ -146,5 +147,7 @@ class CityController extends IntermediateController {
 
 		return array("code" => 200, "response" => $cityDatas);
 	}
+
+
 };
 ?>

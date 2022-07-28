@@ -37,6 +37,8 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 		$scope.selectedCityId = 0;
 		$scope.domCity = null;
 		$scope.homeCity = '';
+		$scope.metar = false;
+		$scope.airquality = false;
 
 		$scope.imageMapper = {
 			"Clear": "sun.jpg",
@@ -193,6 +195,27 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 						$scope.currentCity.wind.desc = t('weather', 'North-West');
 					}
 					$scope.cityLoadError = '';
+					if ($scope.currentCity.METAR != null) {
+						$scope.metar = true;
+					}
+					if ($scope.currentCity.AIR != null) {
+						if ($scope.currentCity.AIR.main.aqi == 1) {
+							$scope.currentCity.AIR.main.desc = t('weather', 'Good');
+						}
+						else if ($scope.currentCity.AIR.main.aqi == 2) {
+							$scope.currentCity.AIR.main.desc = t('weather', 'Fair');
+						}
+						else if ($scope.currentCity.AIR.main.aqi == 3) {
+							$scope.currentCity.AIR.main.desc = t('weather', 'Moderate');
+						}
+						else if ($scope.currentCity.AIR.main.aqi == 4) {
+							$scope.currentCity.AIR.main.desc = t('weather', 'Poor');
+						}
+						else if ($scope.currentCity.AIR.main.aqi == 5) {
+							$scope.currentCity.AIR.main.desc = t('weather', 'Very Poor');
+						}
+						$scope.airquality = true;
+					}
 				}
 				else {
 					$scope.cityLoadError = t('weather', 'Failed to get city weather informations. Please contact your administrator');

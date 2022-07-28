@@ -23,6 +23,7 @@
 	OCA.Weather.Admin = {
 		initialize: function() {
 			$('#submitOWMApiKey').on('click', _.bind(this._onClickSubmitOWMApiKey, this));
+			$('#submitCWXApiKey').on('click', _.bind(this._onClickSubmitCWXApiKey, this));
 		},
 
 		_onClickSubmitOWMApiKey: function () {
@@ -43,6 +44,27 @@
 
 			request.fail(function () {
 				OC.msg.finishedError('#OWMApiKeySettingsMsg', 'Error');
+			});
+		},
+
+		_onClickSubmitCWXApiKey: function () {
+			OC.msg.startSaving('#CWXApiKeySettingsMsg');
+
+			var request = $.ajax({
+				url: OC.generateUrl('/apps/weather/settings/checkwxapikey'),
+				type: 'POST',
+				data: {
+					checkwxapikey: $('#checkwx-api-key').val()
+				}
+			});
+
+			request.done(function (data) {
+				$('#checkwx-api-key').val(data.checkwxapikey);
+				OC.msg.finishedSuccess('#CWXApiKeySettingsMsg', 'Saved');
+			});
+
+			request.fail(function () {
+				OC.msg.finishedError('#CWXApiKeySettingsMsg', 'Error');
 			});
 		}
 	}

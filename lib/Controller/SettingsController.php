@@ -64,6 +64,17 @@ class SettingsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
+	public function checkWXApiKeySet ($checkwxapikey) {
+		$this->config->setAppValue($this->appName, 'checkwx_api_key', $checkwxapikey);
+		return new JSONResponse(array(
+			"checkwxapikey" => $this->config->getAppValue($this->appName, 'checkwx_api_key', ''),
+		));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
 	public function metricSet ($metric) {
 		$this->mapper->setMetric($this->userId, $metric);
 		return new JSONResponse(array("set" => true));

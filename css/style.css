@@ -1,7 +1,7 @@
 #city-list-left {
 	display: flex;
 	flex-direction: column;
-	width: 250px;
+	width: 300px;
 	height: 100%;
 	float: left;
 	-moz-box-sizing: border-box; box-sizing: border-box;
@@ -66,7 +66,7 @@
 	top: 0;
 	bottom: 0;
 	right: 0;
-	left: 250px;
+	left: 300px;
 	background: black no-repeat center center fixed;
 	background-size: cover;
 	-webkit-background-size: cover;
@@ -86,7 +86,8 @@
 #city-right .city-current-humidity, #city-right .city-current-weather,
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
-#city-right .city-current-temp_max, .city-current-temp {
+#city-right .city-current-temp_max, .city-current-temp,
+#city-right .city-current-airquality, #city-right .city-current-metar {
 	font-size: 2em;
 	line-height: 1em;
 }
@@ -189,8 +190,11 @@
 #city-right .city-current-weather, #city-right .city-current-humidity,
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
-#city-right .city-current-temp_max .city-current-temp {
+#city-right .city-current-airquality, #city-right .city-current-temp_max .city-current-temp {
 	font-size: 1.5em;
+}
+#city-right .city-current-metar {
+	font-size: 1.3em;
 }
 #city-forecast-panel {
 	font-size: 1.2em;
@@ -212,7 +216,8 @@
 #city-right .city-current-weather, #city-right .city-current-humidity,
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
-#city-right .city-current-temp_max .city-current-temp {
+#city-right .city-current-temp_max .city-current-temp,
+#city-right .city-current-airquality, #city-right .city-current-metar {
 	font-size: 1.6em;
 }
 }

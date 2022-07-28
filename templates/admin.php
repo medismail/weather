@@ -15,5 +15,11 @@
 		<input id="openweathermap-api-key" type="text" value="<?php p($_['openweathermap_api_key']) ?>" />
 		<input type="submit" id="submitOWMApiKey" value="<?php p($l->t('Save')); ?>"/>
 	</p>
+	<p>
+		<label for="checkwx-api-key"><?php p($l->t('CheckWX API Key')) ?></label>
+		<br />
+		<input id="checkwx-api-key" type="text" value="<?php p($_['checkwx_api_key']) ?>" />
+		<input type="submit" id="submitCWXApiKey" value="<?php p($l->t('Save')); ?>"/>
+	</p>
 </div>
 
