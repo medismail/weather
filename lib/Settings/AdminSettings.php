@@ -38,6 +38,7 @@ class AdminSettings implements ISettings {
 		$params = [
 			"openweathermap_api_key" => $this->config->getAppValue('weather', 'openweathermap_api_key', ''),
 			"checkwx_api_key" => $this->config->getAppValue('weather', 'checkwx_api_key', ''),
+			"visualcrossing_api_key" => $this->config->getAppValue('weather', 'visualcrossing_api_key', ''),
 		];
 
 		return new TemplateResponse('weather', 'admin', $params);

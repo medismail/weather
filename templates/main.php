@@ -62,35 +62,51 @@
 				<div class="city-current-temp_max"><?php p($l->t('Maximum Temperature')); ?>: {{ currentCity.main.temp_max }}{{ metricRepresentation }}</div>
 				<div class="city-current-pressure"><?php p($l->t('Pressure')); ?>: {{ currentCity.main.pressure }} hpa</div>
 				<div class="city-current-humidity"><?php p($l->t('Humidity')); ?>: {{ currentCity.main.humidity}}%</div>
+				<div class="city-current-weather"><?php p($l->t('Dew point')); ?>: {{ currentCity.main.dew }}{{ metricRepresentation }}</div>
 				<div class="city-current-weather"><?php p($l->t('Cloudiness')); ?>: {{ currentCity.weather[0].description }}</div>
+				<div class="city-current-weather"><?php p($l->t('Cloud cover')); ?>: {{ currentCity.main.cloudcover }} %</div>
 				<div class="city-current-wind"><?php p($l->t('Wind')); ?>: {{ currentCity.wind.speed }} m/s - {{ currentCity.wind.desc }}</div>
+				<div class="city-current-airquality" ng-show="airquality == true"><?php p($l->t('Air Quality Index')); ?>: {{ currentCity.AIR.main.aqi }} ( {{ currentCity.AIR.main.desc }} )
+					{ CO: {{ currentCity.AIR.components.co }}μg/m<sup>3</sup>,
+					 NO: {{ currentCity.AIR.components.no }}μg/m<sup>3</sup>,
+					 NO<sub>2</sub>: {{ currentCity.AIR.components.no2 }}μg/m<sup>3</sup>,
+					 PM<sub>10</sub>: {{ currentCity.AIR.components.pm10 }}μg/m<sup>3</sup>,
+					 O<sub>3</sub>: {{ currentCity.AIR.components.o3 }}μg/m<sup>3</sup>,
+					 PM<sub>2.5</sub>: {{ currentCity.AIR.components.pm2_5 }}μg/m<sup>3</sup> }
+				</div>
+				<div class="city-current-solar"><?php p($l->t('UV Index')); ?>: {{ currentCity.main.uvindex }} </div>
+				<div class="city-current-solar"><?php p($l->t('Solar radiation')); ?>: {{ currentCity.main.solarradiation }} W/m2</div>
+				<div class="city-current-solar"><?php p($l->t('Solar energy')); ?>: {{ currentCity.main.solarenergy }} MJ/m2</div>
 				<div class="city-current-sunrise"><?php p($l->t('Sunrise')); ?>: {{ currentCity.sys.sunrise * 1000 | date:'HH:mm' }}</div>
 				<div class="city-current-sunset"><?php p($l->t('Sunset')); ?>: {{ currentCity.sys.sunset * 1000 | date:'HH:mm' }}</div>
-				<div class="city-current-airquality" ng-show="airquality == true"><?php p($l->t('Air Quality Index')); ?>: {{ currentCity.AIR.main.aqi }} ( {{ currentCity.AIR.main.desc }} )</div>
 				<div class="city-current-metar" ng-show="metar == true"><?php p($l->t('METAR')); ?>: {{ currentCity.METAR.raw_text }} ( {{ currentCity.METAR.station.name }} ) </div>
 			</div>
 			<div id="city-forecast-panel">
 				<table>
 					<tr>
 						<th><?php p($l->t('Date')); ?></th>
-						<th><?php p($l->t('Current Temperature')); ?></th>
-						<th><?php p($l->t('Perceptible Temperature')); ?></th>
+						<th><?php p($l->t('Temperature')); ?></th>
 						<th><?php p($l->t('Minimum Temperature')); ?></th>
 						<th><?php p($l->t('Maximum Temperature')); ?></th>
+						<th><?php p($l->t('Perceptible Temperature')); ?></th>
 						<th><?php p($l->t('Weather')); ?></th>
 						<th><?php p($l->t('Pressure')); ?></th>
 						<th><?php p($l->t('Humidity')); ?></th>
+						<th><?php p($l->t('Precipitation')); ?></th>
+						<th><?php p($l->t('UV Index')); ?></th>
 						<th><?php p($l->t('Wind')); ?></th>
 					</tr>
 					<tr ng-repeat="forecast in currentCity.forecast">
 						<td>{{ forecast.date }}</td>
 						<td>{{ forecast.temperature }}{{ metricRepresentation }}</td>
-						<td>{{ forecast.temperature_feelslike }}{{ metricRepresentation }}</td>
 						<td>{{ forecast.temperature_min }}{{ metricRepresentation }}</td>
 						<td>{{ forecast.temperature_max }}{{ metricRepresentation }}</td>
+						<td>{{ forecast.temperature_feelslike }}{{ metricRepresentation }}</td>
 						<td>{{ forecast.weather }}</td>
 						<td>{{ forecast.pressure }} hpa</td>
 						<td>{{ forecast.humidity }} %</td>
+						<td>{{ forecast.precipitation }} mm</td>
+						<td>{{ forecast.uvindex }}</td>
 						<td>{{ forecast.wind.speed }} m/s - {{ forecast.wind.desc }}</td>
 					</tr>
 				</table>

@@ -87,7 +87,7 @@
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
 #city-right .city-current-temp_max, .city-current-temp,
-#city-right .city-current-airquality, #city-right .city-current-metar {
+#city-right .city-current-airquality, #city-right .city-current-solar, #city-right .city-current-metar {
 	font-size: 2em;
 	line-height: 1em;
 }
@@ -172,7 +172,7 @@
 #city-right .city-current-weather, #city-right .city-current-humidity,
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
-#city-right .city-current-temp_max, .city-current-temp {
+#city-right .city-current-solar, #city-right .city-current-temp_max, .city-current-temp {
 	font-size: 2em;
 }
 #city-forecast-panel {
@@ -190,7 +190,7 @@
 #city-right .city-current-weather, #city-right .city-current-humidity,
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
-#city-right .city-current-airquality, #city-right .city-current-temp_max .city-current-temp {
+#city-right .city-current-airquality, #city-right .city-current-solar, #city-right .city-current-temp_max .city-current-temp {
 	font-size: 1.5em;
 }
 #city-right .city-current-metar {
@@ -217,7 +217,7 @@
 #city-right .city-current-sunrise, #city-right .city-current-sunset,
 #city-right .city-current-temp_feelslike, #city-right .city-current-temp_min,
 #city-right .city-current-temp_max .city-current-temp,
-#city-right .city-current-airquality, #city-right .city-current-metar {
+#city-right .city-current-airquality, #city-right .city-current-solar, #city-right .city-current-metar {
 	font-size: 1.6em;
 }
 }

@@ -75,6 +75,17 @@ class SettingsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
+	public function vcApiKeySet ($vcapikey) {
+		$this->config->setAppValue($this->appName, 'visualcrossing_api_key', $vcapikey);
+		return new JSONResponse(array(
+			"vcapikey" => $this->config->getAppValue($this->appName, 'visualcrossing_api_key', ''),
+		));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
 	public function metricSet ($metric) {
 		$this->mapper->setMetric($this->userId, $metric);
 		return new JSONResponse(array("set" => true));

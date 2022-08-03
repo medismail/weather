@@ -21,5 +21,11 @@
 		<input id="checkwx-api-key" type="text" value="<?php p($_['checkwx_api_key']) ?>" />
 		<input type="submit" id="submitCWXApiKey" value="<?php p($l->t('Save')); ?>"/>
 	</p>
+	<p>
+		<label for="visualcrossing-api-key"><?php p($l->t('Visual Crossing API Key')) ?></label>
+		<br />
+		<input id="visualcrossing-api-key" type="text" value="<?php p($_['visualcrossing_api_key']) ?>" />
+		<input type="submit" id="submitVCApiKey" value="<?php p($l->t('Save')); ?>"/>
+	</p>
 </div>
 

@@ -24,6 +24,7 @@
 		initialize: function() {
 			$('#submitOWMApiKey').on('click', _.bind(this._onClickSubmitOWMApiKey, this));
 			$('#submitCWXApiKey').on('click', _.bind(this._onClickSubmitCWXApiKey, this));
+			$('#submitVCApiKey').on('click', _.bind(this._onClickSubmitVCApiKey, this));
 		},
 
 		_onClickSubmitOWMApiKey: function () {
@@ -44,6 +45,27 @@
 
 			request.fail(function () {
 				OC.msg.finishedError('#OWMApiKeySettingsMsg', 'Error');
+			});
+		},
+
+		_onClickSubmitVCApiKey: function () {
+			OC.msg.startSaving('#VCApiKeySettingsMsg');
+
+			var request = $.ajax({
+				url: OC.generateUrl('/apps/weather/settings/vcapikey'),
+				type: 'POST',
+				data: {
+					vcapikey: $('#visualcrossing-api-key').val()
+				}
+			});
+
+			request.done(function (data) {
+				$('#visualcrossing-api-key').val(data.apikey);
+				OC.msg.finishedSuccess('#VCApiKeySettingsMsg', 'Saved');
+			});
+
+			request.fail(function () {
+				OC.msg.finishedError('#VCApiKeySettingsMsg', 'Error');
 			});
 		},
 
