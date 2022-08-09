@@ -8,6 +8,7 @@
  * @author Loic Blot <loic.blot@unix-experience.fr>
  * @copyright Loic Blot 2015
  * @copyright e-alfred 2018
+ * @copyright medismail 2022
  */
 
 namespace OCA\Weather\Db;

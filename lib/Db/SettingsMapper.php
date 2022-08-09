@@ -8,6 +8,7 @@
  * @author Loic Blot <loic.blot@unix-experience.fr>
  * @copyright Loic Blot 2015
  * @copyright e-alfred 2018 
+ * @copyright medismail 2022
  */
 
 namespace OCA\Weather\Db;
@@ -53,6 +54,14 @@ class SettingsMapper extends Mapper {
                         return $row["value"];
                 }
                 return 0;
+        }
+
+        public function setWeatherProvider ($userId, $provider) {
+                $this->setSetting("provider", $userId, $provider);
+        }
+
+        public function getWeatherProvider ($userId) {
+                return $this->getSetting($userId, "provider");
         }
 
 };

@@ -53,10 +53,14 @@ class SettingsController extends Controller {
 		return new JSONResponse(array("set" => true));
 	}
 
-	public function apiKeySet ($apikey) {
-		$this->config->setAppValue($this->appName, 'openweathermap_api_key', $apikey);
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function owmApiKeySet ($owmapikey) {
+		$this->config->setAppValue($this->appName, 'openweathermap_api_key', $owmapikey);
 		return new JSONResponse(array(
-			"apikey" => $this->config->getAppValue($this->appName, 'openweathermap_api_key', ''),
+			"owmapikey" => $this->config->getAppValue($this->appName, 'openweathermap_api_key', ''),
 		));
 	}
 
@@ -86,6 +90,17 @@ class SettingsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
+	public function wbApiKeySet ($wbapikey) {
+		$this->config->setAppValue($this->appName, 'weatherbit_api_key', $wbapikey);
+		return new JSONResponse(array(
+			"wbapikey" => $this->config->getAppValue($this->appName, 'weatherbit_api_key', ''),
+		));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
 	public function metricSet ($metric) {
 		$this->mapper->setMetric($this->userId, $metric);
 		return new JSONResponse(array("set" => true));
@@ -102,6 +117,28 @@ class SettingsController extends Controller {
 			$metric = "metric";
 		}
 		return new JSONResponse(array("metric" => $metric));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function weatherProviderSet ($provider) {
+		$this->mapper->setWeatherProvider($this->userId, $provider);
+		return new JSONResponse(array("set" => true));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function weatherProviderGet () {
+		$provider = $this->mapper->getWeatherProvider($this->userId);
+		if ($provider === 0) {
+			$this->mapper->setWeatherProvider($this->userId, "openweathermap");
+			$provider = "openweathermap";
+		}
+		return new JSONResponse(array("provider" => $provider));
 	}
 };
 ?>

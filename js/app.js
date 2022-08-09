@@ -39,6 +39,7 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 		$scope.homeCity = '';
 		$scope.metar = false;
 		$scope.airquality = false;
+		$scope.provider = 'openweathermap';
 
 		$scope.imageMapper = {
 			"Clear": "sun.jpg",
@@ -59,21 +60,21 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 		}
 
 		$scope.imageMapperNight = {
-			"Clear": "sun_night.jpg",
-			"Clouds": "clouds.png",
-			"Drizzle": "drizzle.jpg",
+			"Clear": "moon.jpg",
+			"Clouds": "clouds_night.png",
+			"Drizzle": "drizzle_night.jpg",
 			"Smoke": "todo.png",
 			"Dust": "todo.png",
-			"Sand": "sand.jpg",
+			"Sand": "sand_night.jpg",
 			"Ash": "todo.png",
 			"Squall": "todo.png",
 			"Tornado": "tornado.jpg",
 			"Haze": "mist.jpg",
 			"Mist": "mist.jpg",
-			"Rain": "rain.jpg",
-			"Snow": "snow.png",
-			"Thunderstorm": "thunderstorm.jpg",
-			"Fog": "fog.jpg",
+			"Rain": "rain_night.jpg",
+			"Snow": "snow_night.png",
+			"Thunderstorm": "thunderstorm_night.jpg",
+			"Fog": "fog_night.jpg",
 		}
 
 		// Reload weather information each minute
@@ -132,6 +133,40 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 				if (!undef(r.data['metric'])) {
 					$scope.metric = r.data['metric'];
 					$scope.mapMetric();
+				}
+			},
+			function (r) {
+				$scope.fatalError();
+			});
+		};
+
+		$timeout(function () { $scope.loadWeatherProvider(); });
+
+		$scope.modifyWeatherProvider = function () {
+			$http.post(OC.generateUrl('/apps/weather/settings/provider/set'), {'provider': $scope.provider}).
+			then(function (r) {
+				if (r.data != null && !undef(r.data['set'])) {
+					$scope.loadCity($scope.domCity);
+				}
+				else {
+					$scope.settingError = t('weather', 'Failed to set Weather Provider. Please contact your administrator');
+				}
+			},
+			function (r) {
+				if (r.status == 404) {
+					$scope.settingError = t('weather', 'This Weather Provider is not known.');
+				}
+				else {
+					$scope.settingError = g_error500;
+				}
+			});
+		}
+
+		$scope.loadWeatherProvider = function () {
+			$http.get(OC.generateUrl('/apps/weather/settings/provider/get')).
+			then(function (r) {
+				if (!undef(r.data['provider'])) {
+					$scope.provider = r.data['provider'];
 				}
 			},
 			function (r) {

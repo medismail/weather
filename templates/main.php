@@ -38,6 +38,12 @@
 						<option value="kelvin">°K</option>
 						<option value="imperial">°F</option>
 					</select>
+					<h2><?php p($l->t('Weather Provider')); ?></h2>
+					<select name="provider" ng-change="modifyWeatherProvider()" ng-model="provider">
+						<option value="openweathermap">OpenWeatherMap</option>
+						<option value="visualcrossing">VisualCrossing</option>
+						<option value="weatherbit">WeatherBit</option>
+					</select>
 				</div>
 			</div>
 		</div>
@@ -62,9 +68,10 @@
 				<div class="city-current-temp_max"><?php p($l->t('Maximum Temperature')); ?>: {{ currentCity.main.temp_max }}{{ metricRepresentation }}</div>
 				<div class="city-current-pressure"><?php p($l->t('Pressure')); ?>: {{ currentCity.main.pressure }} hpa</div>
 				<div class="city-current-humidity"><?php p($l->t('Humidity')); ?>: {{ currentCity.main.humidity}}%</div>
-				<div class="city-current-weather"><?php p($l->t('Dew point')); ?>: {{ currentCity.main.dew }}{{ metricRepresentation }}</div>
-				<div class="city-current-weather"><?php p($l->t('Cloudiness')); ?>: {{ currentCity.weather[0].description }}</div>
-				<div class="city-current-weather"><?php p($l->t('Cloud cover')); ?>: {{ currentCity.main.cloudcover }} %</div>
+				<div class="city-current-weather" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Dew point')); ?>: {{ currentCity.main.dew }}{{ metricRepresentation }}</div>
+				<div class="city-current-weather" ng-show="provider == 'openweathermap' || provider == 'weatherbit'"><?php p($l->t('Cloudiness')); ?>: {{ currentCity.weather[0].description }}</div>
+				<div class="city-current-weather" ng-show="provider == 'visualcrossing'"><?php p($l->t('Description')); ?>: {{ currentCity.weather[0].description }}</div>
+				<div class="city-current-weather" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Cloud cover')); ?>: {{ currentCity.main.cloudcover }} %</div>
 				<div class="city-current-wind"><?php p($l->t('Wind')); ?>: {{ currentCity.wind.speed }} m/s - {{ currentCity.wind.desc }}</div>
 				<div class="city-current-airquality" ng-show="airquality == true"><?php p($l->t('Air Quality Index')); ?>: {{ currentCity.AIR.main.aqi }} ( {{ currentCity.AIR.main.desc }} )
 					{ CO: {{ currentCity.AIR.components.co }}μg/m<sup>3</sup>,
@@ -74,9 +81,9 @@
 					 O<sub>3</sub>: {{ currentCity.AIR.components.o3 }}μg/m<sup>3</sup>,
 					 PM<sub>2.5</sub>: {{ currentCity.AIR.components.pm2_5 }}μg/m<sup>3</sup> }
 				</div>
-				<div class="city-current-solar"><?php p($l->t('UV Index')); ?>: {{ currentCity.main.uvindex }} </div>
-				<div class="city-current-solar"><?php p($l->t('Solar radiation')); ?>: {{ currentCity.main.solarradiation }} W/m2</div>
-				<div class="city-current-solar"><?php p($l->t('Solar energy')); ?>: {{ currentCity.main.solarenergy }} MJ/m2</div>
+				<div class="city-current-solar" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('UV Index')); ?>: {{ currentCity.main.uvindex }} </div>
+				<div class="city-current-solar" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Solar radiation')); ?>: {{ currentCity.main.solarradiation }} W/m2</div>
+				<div class="city-current-solar" ng-show="provider == 'visualcrossing'"><?php p($l->t('Solar energy')); ?>: {{ currentCity.main.solarenergy }} MJ/m2</div>
 				<div class="city-current-sunrise"><?php p($l->t('Sunrise')); ?>: {{ currentCity.sys.sunrise * 1000 | date:'HH:mm' }}</div>
 				<div class="city-current-sunset"><?php p($l->t('Sunset')); ?>: {{ currentCity.sys.sunset * 1000 | date:'HH:mm' }}</div>
 				<div class="city-current-metar" ng-show="metar == true"><?php p($l->t('METAR')); ?>: {{ currentCity.METAR.raw_text }} ( {{ currentCity.METAR.station.name }} ) </div>
@@ -92,8 +99,8 @@
 						<th><?php p($l->t('Weather')); ?></th>
 						<th><?php p($l->t('Pressure')); ?></th>
 						<th><?php p($l->t('Humidity')); ?></th>
-						<th><?php p($l->t('Precipitation')); ?></th>
-						<th><?php p($l->t('UV Index')); ?></th>
+						<th ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Precipitation')); ?></th>
+						<th ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('UV Index')); ?></th>
 						<th><?php p($l->t('Wind')); ?></th>
 					</tr>
 					<tr ng-repeat="forecast in currentCity.forecast">
@@ -105,8 +112,8 @@
 						<td>{{ forecast.weather }}</td>
 						<td>{{ forecast.pressure }} hpa</td>
 						<td>{{ forecast.humidity }} %</td>
-						<td>{{ forecast.precipitation }} mm</td>
-						<td>{{ forecast.uvindex }}</td>
+						<td ng-show="provider == 'visualcrossing' || provider == 'weatherbit'">{{ forecast.precipitation }} mm</td>
+						<td ng-show="provider == 'visualcrossing' || provider == 'weatherbit'">{{ forecast.uvindex }}</td>
 						<td>{{ forecast.wind.speed }} m/s - {{ forecast.wind.desc }}</td>
 					</tr>
 				</table>

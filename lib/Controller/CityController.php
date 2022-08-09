@@ -147,7 +147,5 @@ class CityController extends IntermediateController {
 
 		return array("code" => 200, "response" => $cityDatas);
 	}
-
-
 };
 ?>
