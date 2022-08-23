@@ -57,8 +57,13 @@
         	</div>
 		<div id="city-right" ng-show="cityLoadError == '' && currentCity != null" style="background-image: url('{{ owncloudAppImgPath }}{{ currentCity.image }}');">
 			<div id="city-weather-panel">
-				<div class="city-name">
+				<div class="city-name" ng-show="provider == 'openweathermap' || provider == 'weatherbit'">
 					{{ currentCity.name }}, {{ currentCity.sys.country }}
+					<img ng-show="selectedCityId == homeCity" src="{{ owncloudAppImgPath }}home-pick.png" />
+					<img class="home-icon" ng-click="setHome(selectedCityId);" ng-show="selectedCityId != homeCity" src="{{ owncloudAppImgPath }}home-nopick.png" />
+				</div>
+				<div class="city-name" ng-show="provider == 'visualcrossing'">
+					{{ currentCity.name }}
 					<img ng-show="selectedCityId == homeCity" src="{{ owncloudAppImgPath }}home-pick.png" />
 					<img class="home-icon" ng-click="setHome(selectedCityId);" ng-show="selectedCityId != homeCity" src="{{ owncloudAppImgPath }}home-nopick.png" />
 				</div>
@@ -66,27 +71,32 @@
 				<div class="city-current-temp_feelslike"><?php p($l->t('Feelslike Temperature')); ?>: {{ currentCity.main.feels_like }}{{ metricRepresentation }}</div>
 				<div class="city-current-temp_min"><?php p($l->t('Minimum Temperature')); ?>: {{ currentCity.main.temp_min }}{{ metricRepresentation }}</div>
 				<div class="city-current-temp_max"><?php p($l->t('Maximum Temperature')); ?>: {{ currentCity.main.temp_max }}{{ metricRepresentation }}</div>
-				<div class="city-current-pressure"><?php p($l->t('Pressure')); ?>: {{ currentCity.main.pressure }} hpa</div>
 				<div class="city-current-humidity"><?php p($l->t('Humidity')); ?>: {{ currentCity.main.humidity}}%</div>
+				<div class="city-current-pressure"><?php p($l->t('Pressure')); ?>: {{ currentCity.main.pressure }} hpa</div>
 				<div class="city-current-weather" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Dew point')); ?>: {{ currentCity.main.dew }}{{ metricRepresentation }}</div>
 				<div class="city-current-weather" ng-show="provider == 'openweathermap' || provider == 'weatherbit'"><?php p($l->t('Cloudiness')); ?>: {{ currentCity.weather[0].description }}</div>
 				<div class="city-current-weather" ng-show="provider == 'visualcrossing'"><?php p($l->t('Description')); ?>: {{ currentCity.weather[0].description }}</div>
 				<div class="city-current-weather" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Cloud cover')); ?>: {{ currentCity.main.cloudcover }} %</div>
 				<div class="city-current-wind"><?php p($l->t('Wind')); ?>: {{ currentCity.wind.speed }} m/s - {{ currentCity.wind.desc }}</div>
-				<div class="city-current-airquality" ng-show="airquality == true"><?php p($l->t('Air Quality Index')); ?>: {{ currentCity.AIR.main.aqi }} ( {{ currentCity.AIR.main.desc }} )
-					{ CO: {{ currentCity.AIR.components.co }}μg/m<sup>3</sup>,
-					 NO: {{ currentCity.AIR.components.no }}μg/m<sup>3</sup>,
-					 NO<sub>2</sub>: {{ currentCity.AIR.components.no2 }}μg/m<sup>3</sup>,
-					 PM<sub>10</sub>: {{ currentCity.AIR.components.pm10 }}μg/m<sup>3</sup>,
-					 O<sub>3</sub>: {{ currentCity.AIR.components.o3 }}μg/m<sup>3</sup>,
-					 PM<sub>2.5</sub>: {{ currentCity.AIR.components.pm2_5 }}μg/m<sup>3</sup> }
-				</div>
+				<div class="city-current-weather"><?php p($l->t('Precipitation')); ?>: {{ currentCity.rain }} mm/hr</div>
+				<div class="city-current-weather"><?php p($l->t('Visibility')); ?>: {{ currentCity.visibility }} m</div>
+				<div class="city-current-solar" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Solar radiation')); ?>: {{ currentCity.main.solarradiation }} W/m2,  <?php p($l->t('Solar energy')); ?>: {{ currentCity.main.solarenergy }} MJ/m2</div>
 				<div class="city-current-solar" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('UV Index')); ?>: {{ currentCity.main.uvindex }} </div>
-				<div class="city-current-solar" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Solar radiation')); ?>: {{ currentCity.main.solarradiation }} W/m2</div>
-				<div class="city-current-solar" ng-show="provider == 'visualcrossing'"><?php p($l->t('Solar energy')); ?>: {{ currentCity.main.solarenergy }} MJ/m2</div>
 				<div class="city-current-sunrise"><?php p($l->t('Sunrise')); ?>: {{ currentCity.sys.sunrise * 1000 | date:'HH:mm' }}</div>
 				<div class="city-current-sunset"><?php p($l->t('Sunset')); ?>: {{ currentCity.sys.sunset * 1000 | date:'HH:mm' }}</div>
+				<div class="city-current-sunrise" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Moonrise')); ?>: {{ currentCity.sys.moonrise * 1000 | date:'HH:mm' }}</div>
+				<div class="city-current-sunset" ng-show="provider == 'visualcrossing' || provider == 'weatherbit'"><?php p($l->t('Moonset')); ?>: {{ currentCity.sys.moonset * 1000 | date:'HH:mm' }}</div>
+				<div class="city-current-airquality" ng-show="airquality == true"><?php p($l->t('Air Quality Index')); ?>: {{ currentCity.AIR.main.aqi }} ( {{ currentCity.AIR.main.desc }} )
+					<span ng-show="provider == 'weatherbit'"> US - EPA standard : {{ currentCity.aqi }} </span>
+					{ <span id="aqi-co" ng-style="aqico">CO: {{ currentCity.AIR.components.co }} μg/m<sup>3</sup></span>,
+					 <span id="aqi-no" ng-style="aqino">NO: {{ currentCity.AIR.components.no }}μg/m<sup>3</sup></span>,
+					 <span id="aqi-no2" ng-style="aqino2">NO<sub>2</sub>: {{ currentCity.AIR.components.no2 }}μg/m<sup>3</sup></span>,
+					 <span id="aqi-pm10" ng-style="aqipm10">PM<sub>10</sub>: {{ currentCity.AIR.components.pm10 }}μg/m<sup>3</sup></span>,
+					 <span id="aqi-o3" ng-style="aqio3">O<sub>3</sub>: {{ currentCity.AIR.components.o3 }}μg/m<sup>3</sup></span>,
+					 <span id="aqi-pm25" ng-style="aqipm25">PM<sub>2.5</sub>: {{ currentCity.AIR.components.pm2_5 }}μg/m<sup>3</sup></span> }
+				</div>
 				<div class="city-current-metar" ng-show="metar == true"><?php p($l->t('METAR')); ?>: {{ currentCity.METAR.raw_text }} ( {{ currentCity.METAR.station.name }} ) </div>
+				<div class="city-current-maritime" ng-show="maritime == true"><?php p($l->t('Marine Weather')); ?>: <?php p($l->t('Water temperature')); ?>: {{ currentCity.Maritime.waterTemperature }}°C, <?php p($l->t('Wave Height')); ?>: {{ currentCity.Maritime.waveHeight }} m, <?php p($l->t('Wave Period')); ?>: {{ currentCity.Maritime.wavePeriod }} s </div>
 			</div>
 			<div id="city-forecast-panel">
 				<table>

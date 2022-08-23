@@ -33,5 +33,10 @@
 		<input id="checkwx-api-key" type="text" value="<?php p($_['checkwx_api_key']) ?>" />
 		<input type="submit" id="submitCWXApiKey" value="<?php p($l->t('Save')); ?>"/>
 	</p>
+	<p>
+		<label for="stormglass-api-key"><?php p($l->t('StormGlass API Key')) ?></label>
+		<br />
+		<input id="stormglass-api-key" type="text" value="<?php p($_['stormglass_api_key']) ?>" />
+		<input type="submit" id="submitSGApiKey" value="<?php p($l->t('Save')); ?>"/>
+	</p>
 </div>
-

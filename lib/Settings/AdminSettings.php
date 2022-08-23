@@ -40,6 +40,7 @@ class AdminSettings implements ISettings {
 			"visualcrossing_api_key" => $this->config->getAppValue('weather', 'visualcrossing_api_key', ''),
 			"weatherbit_api_key" => $this->config->getAppValue('weather', 'weatherbit_api_key', ''),
 			"checkwx_api_key" => $this->config->getAppValue('weather', 'checkwx_api_key', ''),
+			"stormglass_api_key" => $this->config->getAppValue('weather', 'stormglass_api_key', ''),
 		];
 
 		return new TemplateResponse('weather', 'admin', $params);

@@ -40,6 +40,7 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 		$scope.metar = false;
 		$scope.airquality = false;
 		$scope.provider = 'openweathermap';
+		$scope.maritime = false;
 
 		$scope.imageMapper = {
 			"Clear": "sun.jpg",
@@ -213,6 +214,50 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 				alert(g_error500);
 				return;
 			}
+			if (city.name == 'Local') {
+				const options = {
+					enableHighAccuracy: false,
+					timeout: 10000,
+					maximumAge: 0
+				};
+
+				function geoSuccess(position) {
+					var lat = position.coords.latitude;
+					var lon = position.coords.longitude;
+					$http.get(OC.generateUrl('/apps/weather/city/getnamefromgeo?lat=' + lat + '&lon=' + lon)).
+					then(function (r) {
+						if (r.data.city_name) {
+							city.name = r.data.city_name;
+							$scope.loadCity(city);
+						} else {
+							$scope.cityLoadError = t('weather','No city with this name found.');
+						}
+					},
+					function (r) {
+						$scope.cityLoadError = t('weather','Failed to get city weather informations. Please contact your administrator.');
+					});
+				}
+
+				function geoError(err) {
+					console.log(`ERROR(${err.code}): ${err.message}`);
+					$http.get(OC.generateUrl('/apps/weather/city/getnamefromip')).
+					then(function (r) {
+						if (r.data.city_name) {
+							city.name = r.data.city_name;
+							$scope.loadCity(city);
+						} else {
+							$scope.cityLoadError = t('weather','No city with this name found.');
+						}
+					},
+					function (r) {
+						$scope.cityLoadError = t('weather','Failed to get city weather informations. Please contact your administrator.');
+					});
+				}
+
+				if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(geoSuccess, geoError, options);
+    				}
+			} else {
 
 			$http.get(OC.generateUrl('/apps/weather/weather/get?name=' + city.name)).
 			then(function (r) {
@@ -251,6 +296,9 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 					if ($scope.currentCity.METAR != null) {
 						$scope.metar = true;
 					}
+					if (($scope.currentCity.Maritime != null)&&($scope.currentCity.Maritime.waveHeight != null)) {
+						$scope.maritime = true;
+					}
 					if ($scope.currentCity.AIR != null) {
 						if ($scope.currentCity.AIR.main.aqi == 1) {
 							$scope.currentCity.AIR.main.desc = t('weather', 'Good');
@@ -266,6 +314,32 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 						}
 						else if ($scope.currentCity.AIR.main.aqi == 5) {
 							$scope.currentCity.AIR.main.desc = t('weather', 'Very Poor');
+						}
+						$scope.aqico = {"color" : "white"};
+						$scope.aqino = {"color" : "white"};
+						if ($scope.currentCity.AIR.components.no2 > 400) {
+							$scope.aqino2 = {"color" : "red"};
+						}
+						else if ($scope.currentCity.AIR.components.no2 > 100) {
+							$scope.aqino2 = {"color" : "orange"};
+						}
+						if ($scope.currentCity.AIR.components.pm10 > 180) {
+							$scope.aqipm10 = {"color" : "red"};
+						}
+						else if ($scope.currentCity.AIR.components.pm10 > 50) {
+							$scope.aqipm10 = {"color" : "orange"};
+						}
+						if ($scope.currentCity.AIR.components.o3 > 240) {
+							$scope.aqio3 = {"color" : "red"};
+						}
+						else if ($scope.currentCity.AIR.components.o3 > 120) {
+							$scope.aqio3 = {"color" : "orange"};
+						}
+						if ($scope.currentCity.AIR.components.pm2_5 > 110) {
+							$scope.aqipm25 = {"color" : "red"};
+						}
+						else if ($scope.currentCity.AIR.components.pm2_5 > 30) {
+							$scope.aqipm25 = {"color" : "orange"};
 						}
 						$scope.airquality = true;
 					}
@@ -289,6 +363,7 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 					$scope.cityLoadNeedsAPIKey = false;
 				}
 			});
+			}
 		}
 
 		$scope.addCity = function(city) {

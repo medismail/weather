@@ -26,6 +26,7 @@
 			$('#submitVCApiKey').on('click', _.bind(this._onClickSubmitVCApiKey, this));
 			$('#submitWBApiKey').on('click', _.bind(this._onClickSubmitWBApiKey, this));
 			$('#submitCWXApiKey').on('click', _.bind(this._onClickSubmitCWXApiKey, this));
+			$('#submitSGApiKey').on('click', _.bind(this._onClickSubmitSGApiKey, this));
 		},
 
 		_onClickSubmitOWMApiKey: function () {
@@ -110,7 +111,29 @@
 			request.fail(function () {
 				OC.msg.finishedError('#CWXApiKeySettingsMsg', 'Error');
 			});
+		},
+
+		_onClickSubmitSGApiKey: function () {
+			OC.msg.startSaving('#SGApiKeySettingsMsg');
+
+			var request = $.ajax({
+				url: OC.generateUrl('/apps/weather/settings/sgapikey'),
+				type: 'POST',
+				data: {
+					sgapikey: $('#stormglass-api-key').val()
+				}
+			});
+
+			request.done(function (data) {
+				$('#stormglass-api-key').val(data.sgapikey);
+				OC.msg.finishedSuccess('#SGApiKeySettingsMsg', 'Saved');
+			});
+
+			request.fail(function () {
+				OC.msg.finishedError('#SGApiKeySettingsMsg', 'Error');
+			});
 		}
+
 	}
 })();
 

@@ -101,6 +101,17 @@ class SettingsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
+	public function sgApiKeySet ($sgapikey) {
+		$this->config->setAppValue($this->appName, 'stormglass_api_key', $sgapikey);
+		return new JSONResponse(array(
+			"sgapikey" => $this->config->getAppValue($this->appName, 'stormglass_api_key', ''),
+		));
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
 	public function metricSet ($metric) {
 		$this->mapper->setMetric($this->userId, $metric);
 		return new JSONResponse(array("set" => true));

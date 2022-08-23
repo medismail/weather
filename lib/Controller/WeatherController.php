@@ -17,12 +17,16 @@ use \OCP\AppFramework\Http\TemplateResponse;
 use \OCP\AppFramework\Controller;
 use \OCP\AppFramework\Http\JSONResponse;
 use \OCP\AppFramework\Http;
+use \OCP\ICacheFactory;
+use \OCP\ICache;
 use \OCP\IL10N;
 
 use \OCA\Weather\Db\CityMapper;
 use \OCA\Weather\Db\SettingsMapper;
 
 use \OCA\Weather\Controller\IntermediateController;
+use DateTime;
+use DateTimezone;
 
 class WeatherController extends IntermediateController {
 
@@ -32,6 +36,8 @@ class WeatherController extends IntermediateController {
 	private $metric;
 	private $provider;
 	private $config;
+	/** @var ICache */
+	private $cache;
 	private $trans;
 	private static $apiWeatherURL = "http://api.openweathermap.org/data/2.5/weather?mode=json&q=";
 	private static $apiForecastURL = "http://api.openweathermap.org/data/2.5/forecast?mode=json&q=";
@@ -40,8 +46,9 @@ class WeatherController extends IntermediateController {
 	private static $apiWeatherBitURL = "http://api.weatherbit.io/v2.0/current?city=";
 	private static $apiWeatherBitForecastURL = "http://api.weatherbit.io/v2.0/forecast/daily?city=";
 	private static $apiCheckWXURL = "https://api.checkwx.com/metar/";
+	private static $apiStormGlassURL = "https://api.stormglass.io/v2/weather/point?";
 
-	public function __construct ($appName, IConfig $config, IRequest $request, $userId, CityMapper $mapper, SettingsMapper $settingsMapper, IL10N $trans) {
+	public function __construct ($appName, IConfig $config, IRequest $request, $userId, CityMapper $mapper, SettingsMapper $settingsMapper, ICacheFactory $cacheFactory, IL10N $trans) {
 		parent::__construct($appName, $request);
 		$this->userId = $userId;
 		$this->mapper = $mapper;
@@ -49,6 +56,7 @@ class WeatherController extends IntermediateController {
 		$this->metric = $settingsMapper->getMetric($this->userId);
 		$this->provider = $settingsMapper->getWeatherProvider($this->userId);
 		$this->config = $config;
+		$this->cache = $cacheFactory->createDistributed('weather');
 		$this->trans = $trans;
 	}
 
@@ -65,7 +73,7 @@ class WeatherController extends IntermediateController {
 	}
 
 	public function getLanguageCode() {
-        	return $this->trans->getLanguageCode();
+		return $this->trans->getLanguageCode();
 	}
 
 	private function getCityInformations ($name) {
@@ -74,6 +82,7 @@ class WeatherController extends IntermediateController {
 		$apiMetarKey = $this->config->getAppValue($this->appName, 'checkwx_api_key');
 		$apiVCKey = $this->config->getAppValue($this->appName, 'visualcrossing_api_key');
 		$apiWBKey = $this->config->getAppValue($this->appName, 'weatherbit_api_key');
+		$apiSGKey = $this->config->getAppValue($this->appName, 'stormglass_api_key');
 
 		$name = preg_replace("[ ]",'%20',$name);
 
@@ -130,11 +139,11 @@ class WeatherController extends IntermediateController {
 			}
 		} else if ($this->provider == "visualcrossing") {
 			$visualCrossingLang = array("de", "en", "es", "fi", "fr", "it", "ja", "ko", "pt", "ru", "zh");
-
+			$visualCrossingElements = "&elements=temp,feelslike,tempmin,tempmax,pressure,humidity,uvindex,dew,solarradiation,solarenergy,cloudcover,windspeed,winddir,conditions,description,sunsetEpoch,sunriseEpoch,,moonriseEpoch,moonsetEpoch,datetime,precip,icon,moonphase,visibility,snow";
 			if (in_array($currentLang, $visualCrossingLang)) {
-				$reqContent = $this->curlGET(WeatherController::$apiVisualCrossingURL.$name."?key=".$apiVCKey."&unitGroup=".$this->mapMetric()."&lang=".$currentLang);
+				$reqContent = $this->curlGET(WeatherController::$apiVisualCrossingURL.$name."?key=".$apiVCKey."&unitGroup=".$this->mapMetric()."&lang=".$currentLang."&iconSet=icons2".$visualCrossingElements);
 			} else {
-				$reqContent = $this->curlGET(WeatherController::$apiVisualCrossingURL.$name."?key=".$apiVCKey."&unitGroup=".$this->mapMetric());
+				$reqContent = $this->curlGET(WeatherController::$apiVisualCrossingURL.$name."?key=".$apiVCKey."&unitGroup=".$this->mapMetric()."&iconSet=icons2".$visualCrossingElements);
 			}
 			if ($reqContent[0] != Http::STATUS_OK) {
 				$this->errorCode = $reqContent[0];
@@ -143,13 +152,14 @@ class WeatherController extends IntermediateController {
 			$cityDatas = [];
 			$forecast = json_decode($reqContent[1], true);
 			//$forecast = json_decode(file_get_contents(WeatherController::$apiVisualCrossingURL.$name."?key=".$apiVCKey."&unitGroup=".$this->metric), true);
+			$conditionCode =  array('snow' => 'Snow','snow-showers-day' => 'Snow','snow-showers-night' => 'Snow','thunder-rain' => 'Thunderstorm','thunder-showers-day' => 'Thunderstorm','thunder-showers-night' => 'Thunderstorm','rain' => 'Drizzle','showers-day' => 'Rain','showers-night' => 'Rain','fog' => 'Fog','wind' => 'Squall','cloudy' => 'Clouds','partly-cloudy-day' => 'Clouds','partly-cloudy-night' => 'Clouds','clear-day' => 'Clear','clear-night' => 'Clear');
 
 			if (isset($forecast['currentConditions'])) {
 				$cityDatas['main'] = array();
 				$cityDatas['main']['temp'] = $forecast['currentConditions']['temp'];
 				$cityDatas['main']['feels_like'] = $forecast['currentConditions']['feelslike'];
-				$cityDatas['main']['temp_min'] = $forecast['days']['0']['tempmin'];
-				$cityDatas['main']['temp_max'] = $forecast['days']['0']['tempmax'];
+				$cityDatas['main']['temp_min'] = $forecast['days'][0]['tempmin'];
+				$cityDatas['main']['temp_max'] = $forecast['days'][0]['tempmax'];
 				$cityDatas['main']['pressure'] = $forecast['currentConditions']['pressure'];
 				$cityDatas['main']['humidity'] = $forecast['currentConditions']['humidity'];
 				$cityDatas['main']['uvindex'] = $forecast['currentConditions']['uvindex'];
@@ -160,12 +170,16 @@ class WeatherController extends IntermediateController {
 				$cityDatas['wind'] = array();
 				$cityDatas['wind']['speed'] = $forecast['currentConditions']['windspeed'];
 				$cityDatas['wind']['deg'] = $forecast['currentConditions']['winddir'];
-			        $cityDatas['weather'][0]['main'] = $this->mapCondition($forecast['currentConditions']['conditions']);
-			        $cityDatas['weather'][0]['description'] = $forecast['description'];
+				$cityDatas['weather'][0]['main'] = $conditionCode[($forecast['currentConditions']['icon'])]; //$this->mapCondition($forecast['currentConditions']['conditions']);
+				$cityDatas['weather'][0]['description'] = $forecast['description'];
 				$cityDatas['sys'] = array();
 				$cityDatas['sys']['sunrise'] = $forecast['currentConditions']['sunriseEpoch'];
 				$cityDatas['sys']['sunset'] = $forecast['currentConditions']['sunsetEpoch'];
 				$cityDatas['name'] = $forecast['resolvedAddress'];
+				$cityDatas['rain'] = $forecast['currentConditions']['precip'];
+				$cityDatas['visibility'] = $forecast['currentConditions']['visibility']*1000;
+				$cityDatas['sys']['moonrise'] = $forecast['days'][0]['moonriseEpoch'];
+				$cityDatas['sys']['moonset'] = $forecast['days'][0]['moonsetEpoch'];
 				$cityDatas['coord'] = array();
 				$cityDatas['coord']['lat'] = $forecast['latitude'];
 				$cityDatas['coord']['lon'] = $forecast['longitude'];
@@ -195,11 +209,11 @@ class WeatherController extends IntermediateController {
 		} else if ($this->provider == "weatherbit") {
 			$weatherBitLang = array("en", "ar", "az", "be", "bg", "bs", "ca", "cz", "da", "de", "fi", "fr", "el", "es", "et", "ja", "hr", "hu", "id", "it", "is", "iw", "kw", "lt", "nb", "nl", "pl", "pt", "ro", "ru", "sk", "sl", "sr", "sv", "tr", "uk", "zh");
 
-			$countryList = array('Afghanistan' => 'AF','Aland Islands' => 'AX','Albania' => 'AL','Algeria' => 'DZ','American Samoa' => 'AS','Andorra' => 'AD','Angola' => 'AO','Anguilla' => 'AI','Antarctica' => 'AQ','Antigua and Barbuda' => 'AG','Argentina' => 'AR','Armenia' => 'AM','Aruba' => 'AW','Australia' => 'AU','Austria' => 'AT','Azerbaijan' => 'AZ','Bahamas the' => 'BS','Bahrain' => 'BH','Bangladesh' => 'BD','Barbados' => 'BB','Belarus' => 'BY','Belgium' => 'BE','Belize' => 'BZ','Benin' => 'BJ','Bermuda' => 'BM','Bhutan' => 'BT','Bolivia' => 'BO','Bosnia and Herzegovina' => 'BA','Botswana' => 'BW','Bouvet Island (Bouvetoya)' => 'BV','Brazil' => 'BR','British Indian Ocean Territory (Chagos Archipelago)' => 'IO','British Virgin Islands' => 'VG','Brunei Darussalam' => 'BN','Bulgaria' => 'BG','Burkina Faso' => 'BF','Burundi' => 'BI','Cambodia' => 'KH','Cameroon' => 'CM','Canada' => 'CA','Cape Verde' => 'CV','Cayman Islands' => 'KY','Central African Republic' => 'CF','Chad' => 'TD','Chile' => 'CL','China' => 'CN','Christmas Island' => 'CX','Cocos (Keeling) Islands' => 'CC','Colombia' => 'CO','Comoros the' => 'KM','Congo' => 'CD','Congo the' => 'CG','Cook Islands' => 'CK','Costa Rica' => 'CR','Cote d\'Ivoire' => 'CI', 'Croatia' => 'HR','Cuba' => 'CU','Cyprus' => 'CY','Czech Republic' => 'CZ','Denmark' => 'DK','Djibouti' => 'DJ','Dominica' => 'DM','Dominican Republic' => 'DO','Ecuador' => 'EC','Egypt' => 'EG','El Salvador' => 'SV','Equatorial Guinea' => 'GQ','Eritrea' => 'ER','Estonia' => 'EE','Ethiopia' => 'ET','Faroe Islands' => 'FO','Falkland Islands (Malvinas)' => 'FK','Fiji the Fiji Islands' => 'FJ','Finland' => 'FI','France, French Republic' => 'FR','French Guiana' => 'GF','French Polynesia' => 'PF','French Southern Territories' => 'TF','Gabon' => 'GA','Gambia the' => 'GM','Georgia' => 'GE','Germany' => 'DE','Ghana' => 'GH','Gibraltar' => 'GI','Greece' => 'GR','Greenland' => 'GL','Grenada' => 'GD','Guadeloupe' => 'GP','Guam' => 'GU','Guatemala' => 'GT','Guernsey' => 'GG','Guinea' => 'GN','Guinea-Bissau' => 'GW','Guyana' => 'GY','Haiti' => 'HT','Heard Island and McDonald Islands' => 'HM','Holy See (Vatican City State)' => 'VA','Honduras' => 'HN','Hong Kong' => 'HK','Hungary' => 'HU','Iceland' => 'IS','India' => 'IN','Indonesia' => 'ID','Iran' => 'IR','Iraq' => 'IQ','Ireland' => 'IE','Isle of Man' => 'IM','Italy' => 'IT','Jamaica' => 'JM','Japan' => 'JP','Jersey' => 'JE','Jordan' => 'JO','Kazakhstan' => 'KZ','Kenya' => 'KE','Kiribati' => 'KI','Korea' => 'KP','Korea' => 'KR','Kuwait' => 'KW','Kyrgyz Republic' => 'KG','Lao' => 'LA','Latvia' => 'LV','Lebanon' => 'LB','Lesotho' => 'LS','Liberia' => 'LR','Libyan Arab Jamahiriya' => 'LY','Liechtenstein' => 'LI','Lithuania' => 'LT','Luxembourg' => 'LU','Macao' => 'MO','Macedonia' => 'MK','Madagascar' => 'MG','Malawi' => 'MW','Malaysia' => 'MY','Maldives' => 'MV','Mali' => 'ML','Malta' => 'MT','Marshall Islands' => 'MH','Martinique' => 'MQ','Mauritania' => 'MR','Mauritius' => 'MU','Mayotte' => 'YT','Mexico' => 'MX','Micronesia' => 'FM','Moldova' => 'MD','Monaco' => 'MC','Mongolia' => 'MN','Montenegro' => 'ME','Montserrat' => 'MS','Morocco' => 'MA','Mozambique' => 'MZ','Myanmar' => 'MM','Namibia' => 'NA','Nauru' => 'NR','Nepal' => 'NP','Netherlands Antilles' => 'AN','Netherlands the' => 'NL','New Caledonia' => 'NC','New Zealand' => 'NZ','Nicaragua' => 'NI','Niger' => 'NE','Nigeria' => 'NG','Niue' => 'NU','Norfolk Island' => 'NF','Northern Mariana Islands' => 'MP','Norway' => 'NO','Oman' => 'OM','Pakistan' => 'PK','Palau' => 'PW','Palestinian Territory' => 'PS','Panama' => 'PA','Papua New Guinea' => 'PG','Paraguay' => 'PY','Peru' => 'PE','Philippines' => 'PH','Pitcairn Islands' => 'PN','Poland' => 'PL','Portugal, Portuguese Republic' => 'PT','Puerto Rico' => 'PR','Qatar' => 'QA','Reunion' => 'RE','Romania' => 'RO','Russian Federation' => 'RU','Rwanda' => 'RW','Saint Barthelemy' => 'BL','Saint Helena' => 'SH','Saint Kitts and Nevis' => 'KN','Saint Lucia' => 'LC','Saint Martin' => 'MF','Saint Pierre and Miquelon' => 'PM','Saint Vincent and the Grenadines' => 'VC','Samoa' => 'WS','San Marino' => 'SM','Sao Tome and Principe' => 'ST','Saudi Arabia' => 'SA','Senegal' => 'SN','Serbia' => 'RS','Seychelles' => 'SC','Sierra Leone' => 'SL','Singapore' => 'SG','Slovakia (Slovak Republic)' => 'SK','Slovenia' => 'SI','Solomon Islands' => 'SB','Somalia, Somali Republic' => 'SO','South Africa' => 'ZA','South Georgia and the South Sandwich Islands' => 'GS','Spain' => 'ES','Sri Lanka' => 'LK','Sudan' => 'SD','Suriname' => 'SR','Svalbard & Jan Mayen Islands' => 'SJ','Swaziland' => 'SZ','Sweden' => 'SE','Switzerland, Swiss Confederation' => 'CH','Syrian Arab Republic' => 'SY','Taiwan' => 'TW','Tajikistan' => 'TJ','Tanzania' => 'TZ','Thailand' => 'TH','Timor-Leste' => 'TL','Togo' => 'TG','Tokelau' => 'TK','Tonga' => 'TO','Trinidad and Tobago' => 'TT','Tunisia' => 'TN','Turkey' => 'TR','Turkmenistan' => 'TM','Turks and Caicos Islands' => 'TC','Tuvalu' => 'TV','Uganda' => 'UG','Ukraine' => 'UA','United Arab Emirates' => 'AE','United Kingdom' => 'GB','United States of America' => 'US','United States Minor Outlying Islands' => 'UM','United States Virgin Islands' => 'VI','Uruguay, Eastern Republic of' => 'UY','Uzbekistan' => 'UZ','Vanuatu' => 'VU','Venezuela' => 'VE','Vietnam' => 'VN','Wallis and Futuna' => 'WF','Western Sahara' => 'EH','Yemen' => 'YE','Zambia' => 'ZM','Zimbabwe' => 'ZW');
+			$countryList = array('Afghanistan' => 'AF','Aland Islands' => 'AX','Albania' => 'AL','Algeria' => 'DZ','American Samoa' => 'AS','Andorra' => 'AD','Angola' => 'AO','Anguilla' => 'AI','Antarctica' => 'AQ','Antigua and Barbuda' => 'AG','Argentina' => 'AR','Armenia' => 'AM','Aruba' => 'AW','Australia' => 'AU','Austria' => 'AT','Azerbaijan' => 'AZ','Bahamas the' => 'BS','Bahrain' => 'BH','Bangladesh' => 'BD','Barbados' => 'BB','Belarus' => 'BY','Belgium' => 'BE','Belize' => 'BZ','Benin' => 'BJ','Bermuda' => 'BM','Bhutan' => 'BT','Bolivia' => 'BO','Bosnia and Herzegovina' => 'BA','Botswana' => 'BW','Bouvet Island (Bouvetoya)' => 'BV','Brazil' => 'BR','British Indian Ocean Territory (Chagos Archipelago)' => 'IO','British Virgin Islands' => 'VG','Brunei Darussalam' => 'BN','Bulgaria' => 'BG','Burkina Faso' => 'BF','Burundi' => 'BI','Cambodia' => 'KH','Cameroon' => 'CM','Canada' => 'CA','Cape Verde' => 'CV','Cayman Islands' => 'KY','Central African Republic' => 'CF','Chad' => 'TD','Chile' => 'CL','China' => 'CN','Christmas Island' => 'CX','Cocos (Keeling) Islands' => 'CC','Colombia' => 'CO','Comoros the' => 'KM','Congo' => 'CD','Congo the' => 'CG','Cook Islands' => 'CK','Costa Rica' => 'CR','Cote d\'Ivoire' => 'CI', 'Croatia' => 'HR','Cuba' => 'CU','Cyprus' => 'CY','Czech Republic' => 'CZ','Denmark' => 'DK','Djibouti' => 'DJ','Dominica' => 'DM','Dominican Republic' => 'DO','Ecuador' => 'EC','Egypt' => 'EG','El Salvador' => 'SV','Equatorial Guinea' => 'GQ','Eritrea' => 'ER','Estonia' => 'EE','Ethiopia' => 'ET','Faroe Islands' => 'FO','Falkland Islands (Malvinas)' => 'FK','Fiji the Fiji Islands' => 'FJ','Finland' => 'FI','France' => 'FR','French Guiana' => 'GF','French Polynesia' => 'PF','French Southern Territories' => 'TF','Gabon' => 'GA','Gambia the' => 'GM','Georgia' => 'GE','Germany' => 'DE','Ghana' => 'GH','Gibraltar' => 'GI','Greece' => 'GR','Greenland' => 'GL','Grenada' => 'GD','Guadeloupe' => 'GP','Guam' => 'GU','Guatemala' => 'GT','Guernsey' => 'GG','Guinea' => 'GN','Guinea-Bissau' => 'GW','Guyana' => 'GY','Haiti' => 'HT','Heard Island and McDonald Islands' => 'HM','Holy See (Vatican City State)' => 'VA','Honduras' => 'HN','Hong Kong' => 'HK','Hungary' => 'HU','Iceland' => 'IS','India' => 'IN','Indonesia' => 'ID','Iran' => 'IR','Iraq' => 'IQ','Ireland' => 'IE','Isle of Man' => 'IM','Italy' => 'IT','Jamaica' => 'JM','Japan' => 'JP','Jersey' => 'JE','Jordan' => 'JO','Kazakhstan' => 'KZ','Kenya' => 'KE','Kiribati' => 'KI','Korea' => 'KP','Korea' => 'KR','Kuwait' => 'KW','Kyrgyz Republic' => 'KG','Lao' => 'LA','Latvia' => 'LV','Lebanon' => 'LB','Lesotho' => 'LS','Liberia' => 'LR','Libyan Arab Jamahiriya' => 'LY','Liechtenstein' => 'LI','Lithuania' => 'LT','Luxembourg' => 'LU','Macao' => 'MO','Macedonia' => 'MK','Madagascar' => 'MG','Malawi' => 'MW','Malaysia' => 'MY','Maldives' => 'MV','Mali' => 'ML','Malta' => 'MT','Marshall Islands' => 'MH','Martinique' => 'MQ','Mauritania' => 'MR','Mauritius' => 'MU','Mayotte' => 'YT','Mexico' => 'MX','Micronesia' => 'FM','Moldova' => 'MD','Monaco' => 'MC','Mongolia' => 'MN','Montenegro' => 'ME','Montserrat' => 'MS','Morocco' => 'MA','Mozambique' => 'MZ','Myanmar' => 'MM','Namibia' => 'NA','Nauru' => 'NR','Nepal' => 'NP','Netherlands Antilles' => 'AN','Netherlands the' => 'NL','New Caledonia' => 'NC','New Zealand' => 'NZ','Nicaragua' => 'NI','Niger' => 'NE','Nigeria' => 'NG','Niue' => 'NU','Norfolk Island' => 'NF','Northern Mariana Islands' => 'MP','Norway' => 'NO','Oman' => 'OM','Pakistan' => 'PK','Palau' => 'PW','Palestinian Territory' => 'PS','Panama' => 'PA','Papua New Guinea' => 'PG','Paraguay' => 'PY','Peru' => 'PE','Philippines' => 'PH','Pitcairn Islands' => 'PN','Poland' => 'PL','Portugal, Portuguese Republic' => 'PT','Puerto Rico' => 'PR','Qatar' => 'QA','Reunion' => 'RE','Romania' => 'RO','Russian Federation' => 'RU','Rwanda' => 'RW','Saint Barthelemy' => 'BL','Saint Helena' => 'SH','Saint Kitts and Nevis' => 'KN','Saint Lucia' => 'LC','Saint Martin' => 'MF','Saint Pierre and Miquelon' => 'PM','Saint Vincent and the Grenadines' => 'VC','Samoa' => 'WS','San Marino' => 'SM','Sao Tome and Principe' => 'ST','Saudi Arabia' => 'SA','Senegal' => 'SN','Serbia' => 'RS','Seychelles' => 'SC','Sierra Leone' => 'SL','Singapore' => 'SG','Slovakia (Slovak Republic)' => 'SK','Slovenia' => 'SI','Solomon Islands' => 'SB','Somalia, Somali Republic' => 'SO','South Africa' => 'ZA','South Georgia and the South Sandwich Islands' => 'GS','Spain' => 'ES','Sri Lanka' => 'LK','Sudan' => 'SD','Suriname' => 'SR','Svalbard & Jan Mayen Islands' => 'SJ','Swaziland' => 'SZ','Sweden' => 'SE','Switzerland, Swiss Confederation' => 'CH','Syrian Arab Republic' => 'SY','Taiwan' => 'TW','Tajikistan' => 'TJ','Tanzania' => 'TZ','Thailand' => 'TH','Timor-Leste' => 'TL','Togo' => 'TG','Tokelau' => 'TK','Tonga' => 'TO','Trinidad and Tobago' => 'TT','Tunisia' => 'TN','Turkey' => 'TR','Turkmenistan' => 'TM','Turks and Caicos Islands' => 'TC','Tuvalu' => 'TV','Uganda' => 'UG','Ukraine' => 'UA','United Arab Emirates' => 'AE','United Kingdom' => 'GB','United States of America' => 'US','United States Minor Outlying Islands' => 'UM','United States Virgin Islands' => 'VI','Uruguay, Eastern Republic of' => 'UY','Uzbekistan' => 'UZ','Vanuatu' => 'VU','Venezuela' => 'VE','Vietnam' => 'VN','Wallis and Futuna' => 'WF','Western Sahara' => 'EH','Yemen' => 'YE','Zambia' => 'ZM','Zimbabwe' => 'ZW');
 			$names = \explode(",", $name);
-			$cname = \end($names);
+			$cname = \urldecode(\end($names));
 			if (\array_key_exists($cname, $countryList)) {
-				$name = \str_replace($cname, $countryList[$cname], $name);
+				$name = \str_replace(\end($names), $countryList[$cname], $name);
 			}
 
 			if (in_array($currentLang, $weatherBitLang)) {
@@ -220,20 +234,24 @@ class WeatherController extends IntermediateController {
 				$cityDatas['main']['feels_like'] = $cityDatas['data'][0]['app_temp'];
 				$cityDatas['main']['pressure'] = $cityDatas['data'][0]['pres'];
 				$cityDatas['main']['humidity'] = $cityDatas['data'][0]['rh'];
-				$cityDatas['main']['uvindex'] = $cityDatas['data'][0]['uv'];
+				$cityDatas['main']['uvindex'] = round($cityDatas['data'][0]['uv'], 2);
 				$cityDatas['main']['dew'] = $cityDatas['data'][0]['dewpt'];
 				$cityDatas['main']['solarradiation'] = $cityDatas['data'][0]['solar_rad'];
+				$cityDatas['main']['solarenergy'] = round($cityDatas['data'][0]['solar_rad']*0.0036, 2);
 				$cityDatas['main']['cloudcover'] = $cityDatas['data'][0]['clouds'];
 				$cityDatas['wind'] = array();
 				$cityDatas['wind']['speed'] = $cityDatas['data'][0]['wind_spd'];
 				$cityDatas['wind']['deg'] = $cityDatas['data'][0]['wind_dir'];
-			        $cityDatas['weather'][0]['main'] = $conditionCode[($cityDatas['data'][0]['weather']['code'])];
-			        $cityDatas['weather'][0]['description'] = $cityDatas['data'][0]['weather']['description'];
+				$cityDatas['weather'][0]['main'] = $conditionCode[($cityDatas['data'][0]['weather']['code'])];
+				$cityDatas['weather'][0]['description'] = $cityDatas['data'][0]['weather']['description'];
 				$cityDatas['sys'] = array();
 				//$cityDatas['sys']['sunrise'] = $cityDatas['data'][0]['sunrise'];
 				//$cityDatas['sys']['sunset'] = $cityDatas['data'][0]['sunset'];
 				$cityDatas['sys']['country'] = $cityDatas['data'][0]['country_code'];
 				$cityDatas['name'] = $cityDatas['data'][0]['city_name'];
+				$cityDatas['rain'] = $cityDatas['data'][0]['precip'];
+				$cityDatas['visibility'] = $cityDatas['data'][0]['vis']*1000;
+				$cityDatas['aqi'] = $cityDatas['data'][0]['aqi'];
 				$cityDatas['coord'] = array();
 				$cityDatas['coord']['lat'] = $cityDatas['data'][0]['lat'];
 				$cityDatas['coord']['lon'] = $cityDatas['data'][0]['lon'];
@@ -251,6 +269,8 @@ class WeatherController extends IntermediateController {
 				$cityDatas['main']['temp_max'] = $forecast['data'][0]['max_temp'];
 				$cityDatas['sys']['sunrise'] = $forecast['data'][0]['sunrise_ts'];
 				$cityDatas['sys']['sunset'] = $forecast['data'][0]['sunset_ts'];
+				$cityDatas['sys']['moonrise'] = $forecast['data'][0]['moonrise_ts'];
+				$cityDatas['sys']['moonset'] = $forecast['data'][0]['moonset_ts'];
 				$cityDatas['forecast'] = array();
 				$maxFC = count($forecast['data']);
 				for ($i = 0; $i < $maxFC; $i++) {
@@ -276,10 +296,29 @@ class WeatherController extends IntermediateController {
 
 		if (isset($cityDatas['coord'])) {
 			if ($apiMetarKey) {
-				$coord = "lat/".$cityDatas['coord']['lat']."/lon/".$cityDatas['coord']['lon'];
-				$metar = json_decode(file_get_contents(WeatherController::$apiCheckWXURL.$coord."/decoded?x-api-key=".$apiMetarKey), true);
+				$metar = $this->getMETAR($cityDatas['coord']['lat'], $cityDatas['coord']['lon'], $apiMetarKey);
 				if (isset($metar['data']))
 					$cityDatas['METAR'] = $metar['data'][0];
+			}
+			if ($apiSGKey) {
+				$maritime = $this->getMaritimeData($name, $cityDatas['coord']['lat'], $cityDatas['coord']['lon'], $apiSGKey);
+				if (isset($maritime['hours'])) {
+					$now = new DateTime("now", new DateTimezone('UTC'));
+					$h = $now->format('G');
+					$cityDatas['Maritime']['waterTemperature'] = $maritime['hours'][$h]['waterTemperature']['sg'];
+					$cityDatas['Maritime']['waveDirection'] = $maritime['hours'][$h]['waveDirection']['sg'];
+					$cityDatas['Maritime']['waveHeight'] = $maritime['hours'][$h]['waveHeight']['sg'];
+					$cityDatas['Maritime']['wavePeriod'] = $maritime['hours'][$h]['wavePeriod']['sg'];
+					$cityDatas['Maritime']['swellDirection'] = $maritime['hours'][$h]['swellDirection']['sg'];
+					$cityDatas['Maritime']['swellHeight'] = $maritime['hours'][$h]['swellHeight']['sg'];
+					$cityDatas['Maritime']['swellPeriod'] = $maritime['hours'][$h]['swellPeriod']['sg'];
+					$cityDatas['Maritime']['secondarySwellDirection'] = $maritime['hours'][$h]['secondarySwellDirection']['sg'];
+					$cityDatas['Maritime']['secondarySwellHeight'] = $maritime['hours'][$h]['secondarySwellHeight']['sg'];
+					$cityDatas['Maritime']['secondarySwellPeriod'] = $maritime['hours'][$h]['secondarySwellPeriod']['sg'];
+					$cityDatas['Maritime']['windWaveDirection'] = $maritime['hours'][$h]['windWaveDirection']['sg'];
+					$cityDatas['Maritime']['windWaveHeight'] = $maritime['hours'][$h]['windWaveHeight']['sg'];
+					$cityDatas['Maritime']['windWavePeriod'] = $maritime['hours'][$h]['windWavePeriod']['sg'];
+				}
 			}
 			$airPollution = json_decode(file_get_contents(WeatherController::$apiAirPollutionURL."lat=".$cityDatas['coord']['lat']."&lon=".$cityDatas['coord']['lon']."&appid=".$apiOwmKey), true);
 			if (isset($airPollution['list']))
@@ -291,7 +330,7 @@ class WeatherController extends IntermediateController {
 
 	private function windDegToString($deg) {
 
-		if ($deg > 0 && $deg < 23 ||
+		if ($deg >= 0 && $deg < 23 ||
 			$deg > 333) {
 			return $this->trans->t('North');
 		}
@@ -347,7 +386,7 @@ class WeatherController extends IntermediateController {
 		}
 	}
 
-	private function isDay($unixtimesunrisen, $unixtimesunset) {
+	private function isDay($unixtimesunrise, $unixtimesunset) {
 		$unixnowtime = strtotime("now");
 		if (($unixnowtime > $unixtimesunrise) && ($unixnowtime < $unixtimesunset)) {
 			return true;
@@ -375,28 +414,61 @@ class WeatherController extends IntermediateController {
 		return $this->metric;
 	}
 
-	private function mapCondition($condition) {
-		$conditions = explode(",", $condition);
-		$condition = $conditions[0];
-		if (($condition == "Partially cloudy")||($condition == "Overcast")) {
-			return "Clouds";
+	private function getMETAR($lat, $lon, $apiMetarKey) {
+		$cacheKey = WeatherController::$apiCheckWXURL . '|' . $lat . '|' . $lon;
+		$cacheValue = $this->cache->get($cacheKey);
+		if ($cacheValue !== null) {
+			return $cacheValue;
 		}
-			/*return "Clear";
-			return "Drizzle";
-			return "Smoke";
-			return "Dust";
-			return "Sand";
-			return "Ash";
-			return "Squall";
-			return "Tornado";
-			return "Haze";
-			return "Mist";
-			return "Rain";
-			return "Snow";
-			return "Thunderstorm";
-			return "Fog";*/
-		return $condition;
+
+		try {
+			$coord = "lat/".$lat."/lon/".$lon;
+			$metar = json_decode(file_get_contents(WeatherController::$apiCheckWXURL.$coord."/decoded?x-api-key=".$apiMetarKey), true);
+			if (isset($metar['data'])) {
+				// default cache duration is 10 minutes
+				$cacheDuration = 60 * 10;
+				$this->cache->set($cacheKey, $metar, $cacheDuration);
+			}
+			return $metar;
+		} catch (\Exception $e) {
+			return ['error' => $e->getMessage()];
+		}
 	}
+
+	private function getMaritimeData($name, $lat, $lon, $apiSGKey) {
+		$cacheKey = WeatherController::$apiStormGlassURL . '|' . $name;
+		$cacheValue = $this->cache->get($cacheKey);
+		if ($cacheValue !== null) {
+			return $cacheValue;
+		}
+
+		try {
+			$params = "&params=airTemperature,pressure,cloudCover,currentDirection,currentSpeed,gust,humidity,iceCover,precipitation,snowDepth,swellDirection,swellHeight,swellPeriod,secondarySwellPeriod,secondarySwellDirection,secondarySwellHeight,visibility,waterTemperature,waveDirection,waveHeight,wavePeriod,windWaveDirection,windWaveHeight,windWavePeriod,windDirection,windSpeed";
+			$start = new DateTime('today', new DateTimezone('UTC'));
+			$end = new DateTime('today +1 day', new DateTimezone('UTC'));
+			$opts = array(
+				'http'=>array(
+					'method'=>"GET",
+					'header' =>
+						"User-agent: NextcloudWeather\r\n".
+						"Accept: */*\r\n".
+						"Authorization: ".$apiSGKey."\r\n",
+					'ignore_errors' => true
+				)
+			);
+			$forecast = json_decode(file_get_contents(WeatherController::$apiStormGlassURL."lat=".$lat."&lng=".$lon.$params."&start=".$start->getTimestamp()."&end=".$end->getTimestamp(), false, stream_context_create($opts)), true);
+			if (isset($forecast['hours'])) {
+				// default cache duration is 12 hour
+				$now = new DateTime('now', new DateTimezone('UTC'));
+				$cacheDuration = $end->getTimestamp() - $now->getTimestamp(); //60 * 60 * (24-$now->format('H'));
+				$this->cache->set($cacheKey, $forecast, $cacheDuration);
+			}
+			return $forecast;
+		} catch (\Exception $e) {
+			return ['error' => $e->getMessage()];
+		}
+	}
+
 };
 
 ?>

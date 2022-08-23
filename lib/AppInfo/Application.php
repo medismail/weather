@@ -89,6 +89,7 @@ class Application extends App {
 				$c->query('UserId'),
 				$c->query('CityMapper'),
 				$c->query('SettingsMapper'),
+				$c->query('ICacheFactory'),
 				$c->query('L10N')
 			);
 		});
