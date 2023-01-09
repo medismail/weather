@@ -45,6 +45,7 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 		$scope.imageMapper = {
 			"Clear": "sun.jpg",
 			"Clouds": "clouds.png",
+			"FewClouds": "fewClouds.jpg",
 			"Drizzle": "drizzle.jpg",
 			"Smoke": "todo.png",
 			"Dust": "todo.png",
@@ -61,21 +62,22 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 		}
 
 		$scope.imageMapperNight = {
-			"Clear": "moon.jpg",
-			"Clouds": "clouds_night.png",
+			"Clear": "night.jpg",
+			"Clouds": "clouds_night.jpg",
+			"FewClouds": "clouds_night.jpg",
 			"Drizzle": "drizzle_night.jpg",
 			"Smoke": "todo.png",
 			"Dust": "todo.png",
-			"Sand": "sand_night.jpg",
+			"Sand": "sand.jpg",
 			"Ash": "todo.png",
 			"Squall": "todo.png",
 			"Tornado": "tornado.jpg",
 			"Haze": "mist.jpg",
 			"Mist": "mist.jpg",
-			"Rain": "rain_night.jpg",
-			"Snow": "snow_night.png",
-			"Thunderstorm": "thunderstorm_night.jpg",
-			"Fog": "fog_night.jpg",
+			"Rain": "rain.jpg",
+			"Snow": "snow.png",
+			"Thunderstorm": "thunderstorm.jpg",
+			"Fog": "fog.jpg",
 		}
 
 		// Reload weather information each minute
@@ -265,7 +267,11 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 					$scope.domCity = city;
 					$scope.currentCity = r.data;
 					$scope.selectedCityId = city.id;
-					$scope.currentCity.image = $scope.imageMapper[$scope.currentCity.weather[0].main];
+					if ($scope.currentCity.main.pod == 'n') {
+						$scope.currentCity.image = $scope.imageMapperNight[$scope.currentCity.weather[0].main];
+					} else {
+						$scope.currentCity.image = $scope.imageMapper[$scope.currentCity.weather[0].main];
+					}
 					$scope.currentCity.wind.desc = "";
 					if ($scope.currentCity.wind.deg > 0 && $scope.currentCity.wind.deg < 23 ||
 						$scope.currentCity.wind.deg > 333) {
@@ -298,6 +304,8 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 					}
 					if (($scope.currentCity.Maritime != null)&&($scope.currentCity.Maritime.waveHeight != null)) {
 						$scope.maritime = true;
+					} else {
+						$scope.maritime = false;
 					}
 					if ($scope.currentCity.AIR != null) {
 						if ($scope.currentCity.AIR.main.aqi == 1) {
@@ -322,24 +330,32 @@ app.controller('WeatherController', ['$scope', '$interval', '$timeout', '$compil
 						}
 						else if ($scope.currentCity.AIR.components.no2 > 100) {
 							$scope.aqino2 = {"color" : "orange"};
+						} else {
+							$scope.aqino2 = {"color" : "#82FC07"};
 						}
 						if ($scope.currentCity.AIR.components.pm10 > 180) {
 							$scope.aqipm10 = {"color" : "red"};
 						}
 						else if ($scope.currentCity.AIR.components.pm10 > 50) {
 							$scope.aqipm10 = {"color" : "orange"};
+						} else {
+							$scope.aqipm10 = {"color" : "#82FC07"};
 						}
 						if ($scope.currentCity.AIR.components.o3 > 240) {
 							$scope.aqio3 = {"color" : "red"};
 						}
 						else if ($scope.currentCity.AIR.components.o3 > 120) {
 							$scope.aqio3 = {"color" : "orange"};
+						} else {
+							$scope.aqio3 = {"color" : "#82FC07"};
 						}
 						if ($scope.currentCity.AIR.components.pm2_5 > 110) {
 							$scope.aqipm25 = {"color" : "red"};
 						}
 						else if ($scope.currentCity.AIR.components.pm2_5 > 30) {
 							$scope.aqipm25 = {"color" : "orange"};
+						} else {
+							$scope.aqipm25 = {"color" : "#82FC07"};
 						}
 						$scope.airquality = true;
 					}

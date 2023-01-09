@@ -107,6 +107,11 @@ class WeatherController extends IntermediateController {
 			}
 
 			$cityDatas = json_decode($reqContent[1], true);
+			if ($this->isDay($cityDatas['sys']['sunrise'], $cityDatas['sys']['sunset'])) {
+				$cityDatas['main']['pod'] = 'd';
+			} else {
+				$cityDatas['main']['pod'] = 'n';
+			}
 			$cityDatas["forecast"] = array();
 
 			if (in_array($currentLang, $openWeatherMapLang)) {
@@ -152,7 +157,7 @@ class WeatherController extends IntermediateController {
 			$cityDatas = [];
 			$forecast = json_decode($reqContent[1], true);
 			//$forecast = json_decode(file_get_contents(WeatherController::$apiVisualCrossingURL.$name."?key=".$apiVCKey."&unitGroup=".$this->metric), true);
-			$conditionCode =  array('snow' => 'Snow','snow-showers-day' => 'Snow','snow-showers-night' => 'Snow','thunder-rain' => 'Thunderstorm','thunder-showers-day' => 'Thunderstorm','thunder-showers-night' => 'Thunderstorm','rain' => 'Drizzle','showers-day' => 'Rain','showers-night' => 'Rain','fog' => 'Fog','wind' => 'Squall','cloudy' => 'Clouds','partly-cloudy-day' => 'Clouds','partly-cloudy-night' => 'Clouds','clear-day' => 'Clear','clear-night' => 'Clear');
+			$conditionCode =  array('snow' => 'Snow','snow-showers-day' => 'Snow','snow-showers-night' => 'Snow','thunder-rain' => 'Thunderstorm','thunder-showers-day' => 'Thunderstorm','thunder-showers-night' => 'Thunderstorm','rain' => 'Drizzle','showers-day' => 'Rain','showers-night' => 'Rain','fog' => 'Fog','wind' => 'Squall','cloudy' => 'Clouds','partly-cloudy-day' => 'FewClouds','partly-cloudy-night' => 'FewClouds','clear-day' => 'Clear','clear-night' => 'Clear');
 
 			if (isset($forecast['currentConditions'])) {
 				$cityDatas['main'] = array();
@@ -168,9 +173,13 @@ class WeatherController extends IntermediateController {
 				$cityDatas['main']['solarenergy'] = $forecast['currentConditions']['solarenergy'] ? $forecast['currentConditions']['solarenergy'] : 0;
 				$cityDatas['main']['cloudcover'] = $forecast['currentConditions']['cloudcover'];
 				$cityDatas['wind'] = array();
-				$cityDatas['wind']['speed'] = $forecast['currentConditions']['windspeed'];
+				if ($this->metric == "metric") {
+					$cityDatas['wind']['speed'] = round($forecast['currentConditions']['windspeed']*0.277, 2);
+				} else {
+					$cityDatas['wind']['speed'] = $forecast['currentConditions']['windspeed'];
+				}
 				$cityDatas['wind']['deg'] = $forecast['currentConditions']['winddir'];
-				$cityDatas['weather'][0]['main'] = $conditionCode[($forecast['currentConditions']['icon'])]; //$this->mapCondition($forecast['currentConditions']['conditions']);
+				$cityDatas['weather'][0]['main'] = $conditionCode[($forecast['currentConditions']['icon'])];
 				$cityDatas['weather'][0]['description'] = $forecast['description'];
 				$cityDatas['sys'] = array();
 				$cityDatas['sys']['sunrise'] = $forecast['currentConditions']['sunriseEpoch'];
@@ -183,6 +192,11 @@ class WeatherController extends IntermediateController {
 				$cityDatas['coord'] = array();
 				$cityDatas['coord']['lat'] = $forecast['latitude'];
 				$cityDatas['coord']['lon'] = $forecast['longitude'];
+				if ($this->isDay($cityDatas['sys']['sunrise'], $cityDatas['sys']['sunset'])) {
+					$cityDatas['main']['pod'] = 'd';
+				} else {
+					$cityDatas['main']['pod'] = 'n';
+				}
 			}
 			if (isset($forecast['days'])) {
 				$cityDatas['forecast'] = array();
@@ -226,7 +240,7 @@ class WeatherController extends IntermediateController {
 				return null;
 			}
 			$cityDatas = json_decode($reqContent[1], true);
-			$conditionCode = ['200' => 'Thunderstorm', '201' => 'Thunderstorm', '202' => 'Thunderstorm', '230' => 'Thunderstorm', '231' => 'Thunderstorm', '233' => 'Thunderstorm', '300' => 'Drizzle', '301' => 'Drizzle', '302' => 'Drizzle', '500' => 'Rain', '501' =>' Rain', '502' => 'Rain', '511' => 'Rain', '900' => 'Rain', '600' => 'Snow', '601' => 'Snow', '602' => 'Snow', '610' => 'Snow', '611' => 'Snow', '612' => 'Snow', '621' => 'Snow', '622' => 'Snow', '623' => 'Snow', '700' => 'Mist', '711' => 'Smoke', '721' => 'Haze', '731' => 'Sand', '741' => 'Fog', '751' => 'Fog', '800' => 'Clear', '801' => 'Clouds', '802' => 'Clouds', '803' => 'Clouds', '804' => 'Clouds'];
+			$conditionCode = ['200' => 'Thunderstorm', '201' => 'Thunderstorm', '202' => 'Thunderstorm', '230' => 'Thunderstorm', '231' => 'Thunderstorm', '233' => 'Thunderstorm', '300' => 'Drizzle', '301' => 'Drizzle', '302' => 'Drizzle', '500' => 'Rain', '501' =>' Rain', '502' => 'Rain', '511' => 'Rain', '900' => 'Rain', '600' => 'Snow', '601' => 'Snow', '602' => 'Snow', '610' => 'Snow', '611' => 'Snow', '612' => 'Snow', '621' => 'Snow', '622' => 'Snow', '623' => 'Snow', '700' => 'Mist', '711' => 'Smoke', '721' => 'Haze', '731' => 'Sand', '741' => 'Fog', '751' => 'Fog', '800' => 'Clear', '801' => 'FewClouds', '802' => 'Clouds', '803' => 'Clouds', '804' => 'Clouds'];
 
 			if (isset($cityDatas['data'])) {
 				$cityDatas['main'] = array();
@@ -255,6 +269,7 @@ class WeatherController extends IntermediateController {
 				$cityDatas['coord'] = array();
 				$cityDatas['coord']['lat'] = $cityDatas['data'][0]['lat'];
 				$cityDatas['coord']['lon'] = $cityDatas['data'][0]['lon'];
+				$cityDatas['main']['pod'] = $cityDatas['data'][0]['pod'];
 				unset($cityDatas['data']);
 			}
 
