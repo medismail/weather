@@ -320,19 +320,21 @@ class WeatherController extends IntermediateController {
 				if (isset($maritime['hours'])) {
 					$now = new DateTime("now", new DateTimezone('UTC'));
 					$h = $now->format('G');
-					$cityDatas['Maritime']['waterTemperature'] = $maritime['hours'][$h]['waterTemperature']['sg'];
-					$cityDatas['Maritime']['waveDirection'] = $maritime['hours'][$h]['waveDirection']['sg'];
-					$cityDatas['Maritime']['waveHeight'] = $maritime['hours'][$h]['waveHeight']['sg'];
-					$cityDatas['Maritime']['wavePeriod'] = $maritime['hours'][$h]['wavePeriod']['sg'];
-					$cityDatas['Maritime']['swellDirection'] = $maritime['hours'][$h]['swellDirection']['sg'];
-					$cityDatas['Maritime']['swellHeight'] = $maritime['hours'][$h]['swellHeight']['sg'];
-					$cityDatas['Maritime']['swellPeriod'] = $maritime['hours'][$h]['swellPeriod']['sg'];
-					$cityDatas['Maritime']['secondarySwellDirection'] = $maritime['hours'][$h]['secondarySwellDirection']['sg'];
-					$cityDatas['Maritime']['secondarySwellHeight'] = $maritime['hours'][$h]['secondarySwellHeight']['sg'];
-					$cityDatas['Maritime']['secondarySwellPeriod'] = $maritime['hours'][$h]['secondarySwellPeriod']['sg'];
-					$cityDatas['Maritime']['windWaveDirection'] = $maritime['hours'][$h]['windWaveDirection']['sg'];
-					$cityDatas['Maritime']['windWaveHeight'] = $maritime['hours'][$h]['windWaveHeight']['sg'];
-					$cityDatas['Maritime']['windWavePeriod'] = $maritime['hours'][$h]['windWavePeriod']['sg'];
+					if (isset($maritime['hours'][$h]['waveDirection']['sg'])) {
+						$cityDatas['Maritime']['waterTemperature'] = $maritime['hours'][$h]['waterTemperature']['sg'];
+						$cityDatas['Maritime']['waveDirection'] = $maritime['hours'][$h]['waveDirection']['sg'];
+						$cityDatas['Maritime']['waveHeight'] = $maritime['hours'][$h]['waveHeight']['sg'];
+						$cityDatas['Maritime']['wavePeriod'] = $maritime['hours'][$h]['wavePeriod']['sg'];
+						$cityDatas['Maritime']['swellDirection'] = $maritime['hours'][$h]['swellDirection']['sg'];
+						$cityDatas['Maritime']['swellHeight'] = $maritime['hours'][$h]['swellHeight']['sg'];
+						$cityDatas['Maritime']['swellPeriod'] = $maritime['hours'][$h]['swellPeriod']['sg'];
+						$cityDatas['Maritime']['secondarySwellDirection'] = $maritime['hours'][$h]['secondarySwellDirection']['sg'];
+						$cityDatas['Maritime']['secondarySwellHeight'] = $maritime['hours'][$h]['secondarySwellHeight']['sg'];
+						$cityDatas['Maritime']['secondarySwellPeriod'] = $maritime['hours'][$h]['secondarySwellPeriod']['sg'];
+						$cityDatas['Maritime']['windWaveDirection'] = $maritime['hours'][$h]['windWaveDirection']['sg'];
+						$cityDatas['Maritime']['windWaveHeight'] = $maritime['hours'][$h]['windWaveHeight']['sg'];
+						$cityDatas['Maritime']['windWavePeriod'] = $maritime['hours'][$h]['windWavePeriod']['sg'];
+					}
 				}
 			}
 			$airPollution = json_decode(file_get_contents(WeatherController::$apiAirPollutionURL."lat=".$cityDatas['coord']['lat']."&lon=".$cityDatas['coord']['lon']."&appid=".$apiOwmKey), true);
